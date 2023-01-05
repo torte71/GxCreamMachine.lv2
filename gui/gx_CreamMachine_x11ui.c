@@ -748,7 +748,7 @@ static void send_controller_event(gx_CreamMachineUI *ui, int controller) {
 #ifdef _WIN32
 deb("controller_expose#%d",controller);
 	controller_expose(ui, &ui->controls[controller]);
-	InvalidateRect(ui->win, NULL, TRUE);
+    RedrawWindow(ui->win, NULL, NULL, RDW_NOERASE | RDW_INVALIDATE | RDW_UPDATENOW);
 #endif /* _WIN32 */
 
 }
@@ -1169,7 +1169,6 @@ LRESULT onPaint( HWND hwnd, WPARAM wParam, LPARAM lParam ) {
 gx_CreamMachineUI *ui = (gx_CreamMachineUI *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
 deb("onpaint:ui=%8.8x",ui);
 _expose(ui);
-InvalidateRect(hwnd, NULL, TRUE); // force update?
     HDC hdc = BeginPaint(hwnd, &ps );
 deb("onpaint:hdc=%8.8x",hdc);
 
