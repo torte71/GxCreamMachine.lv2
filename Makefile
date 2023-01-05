@@ -42,12 +42,15 @@
 		ABI_CXXFLAGS = -Wl,-z,relro,-z,now
 		ABI_LDFLAGS = -Wl,-z,noexecstack
 		GUI_LIBS = -L/usr/X11/lib -lX11
+		LIB_EXT = so
 	endif
 	ifeq ($(OS), Windows_NT) #WINDOWS
 		ECHO += -e
 		ABI_LDFLAGS = -static
 		GUI_LIBS = -liconv -lstdc++
 		PKGCONFIG_FLAGS = --static
+		LIB_EXT = so
+		#LIB_EXT = dll # TODO:adjust .ttl files
 	endif
 	ifeq ($(UNAME_S), Darwin) #APPLE
 		# insert magic here
@@ -73,16 +76,16 @@
 all : check $(NAME)
 	@mkdir -p ./$(BUNDLE)
 	@cp ./plugin/*.ttl ./$(BUNDLE)
-	@mv ./*.so ./$(BUNDLE)
-	@if [ -f ./$(BUNDLE)/$(NAME).so ]; then $(ECHO) $(BLUE)"build finish, now run make install"; \
+	@mv ./*.$(LIB_EXT) ./$(BUNDLE)
+	@if [ -f ./$(BUNDLE)/$(NAME).$(LIB_EXT) ]; then $(ECHO) $(BLUE)"build finish, now run make install"; \
 	else $(ECHO) $(RED)"sorry, build failed"; fi
 	@$(ECHO) $(NONE)
 
 mod : check clean nogui
 	@mkdir -p ./$(BUNDLE)
 	@cp -R ./MOD/* ./$(BUNDLE)
-	@mv ./*.so ./$(BUNDLE)
-	@if [ -f ./$(BUNDLE)/$(NAME).so ]; then $(ECHO) $(BLUE)"build finish, now run make install"; \
+	@mv ./*.$(LIB_EXT) ./$(BUNDLE)
+	@if [ -f ./$(BUNDLE)/$(NAME).$(LIB_EXT) ]; then $(ECHO) $(BLUE)"build finish, now run make install"; \
 	else $(ECHO) $(RED)"sorry, build failed"; fi
 	@$(ECHO) $(NONE)
 
@@ -99,12 +102,12 @@ $(RES_OBJECTS) : gui/pedal.png gui/pswitch.png
 	-cd ./gui && $(LD) -r -b binary pswitch.png -o pswitch.o
 
 clean :
-	@rm -f $(NAME).so
+	@rm -f $(NAME).$(LIB_EXT)
 	@rm -rf ./$(BUNDLE)
 	@$(ECHO) ". ." $(BLUE)", clean up"$(NONE)
 
 dist-clean :
-	@rm -f $(NAME).so
+	@rm -f $(NAME).$(LIB_EXT)
 	@rm -rf ./$(BUNDLE)
 	@rm -rf ./$(RES_OBJECTS)
 	@$(ECHO) ". ." $(BLUE)", clean up"$(NONE)
@@ -123,11 +126,11 @@ uninstall :
 	@$(ECHO) ". ." $(BLUE)", done"$(NONE)
 
 $(NAME) : clean $(RES_OBJECTS)
-	$(CXX) $(CXXFLAGS) $(OBJECTS) $(LDFLAGS) -o $(NAME).so
-	$(CC) $(CXXFLAGS) $(ABI_CFLAGS) $(GUI_OBJECTS) $(RES_OBJECTS) $(GUI_LDFLAGS) -o $(NAME)_ui.so
-	$(STRIP) -s -x -X -R .note.ABI-tag $(NAME).so
-	$(STRIP) -s -x -X -R .note.ABI-tag $(NAME)_ui.so
+	$(CXX) $(CXXFLAGS) $(OBJECTS) $(LDFLAGS) -o $(NAME).$(LIB_EXT)
+	$(CC) $(CXXFLAGS) $(ABI_CFLAGS) $(GUI_OBJECTS) $(RES_OBJECTS) $(GUI_LDFLAGS) -o $(NAME)_ui.$(LIB_EXT)
+	$(STRIP) -s -x -X -R .note.ABI-tag $(NAME).$(LIB_EXT)
+	$(STRIP) -s -x -X -R .note.ABI-tag $(NAME)_ui.$(LIB_EXT)
 
 nogui : clean
-	$(CXX) $(CXXFLAGS) $(OBJECTS) $(LDFLAGS) -o $(NAME).so
-	$(STRIP) -s -x -X -R .note.ABI-tag $(NAME).so
+	$(CXX) $(CXXFLAGS) $(OBJECTS) $(LDFLAGS) -o $(NAME).$(LIB_EXT)
+	$(STRIP) -s -x -X -R .note.ABI-tag $(NAME).$(LIB_EXT)
