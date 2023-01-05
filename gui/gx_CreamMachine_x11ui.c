@@ -1,3 +1,4 @@
+// vim:ts=4:sw=4:et:
 
 #include <math.h>
 #include <stdint.h>
@@ -10,11 +11,18 @@
 #include <stdlib.h>
 
 #include <cairo.h>
+#ifdef _WIN32
+#include <cairo/cairo-win32.h>
+
+#include <windows.h>
+#include <windowsx.h>
+#else /* LINUX */
 #include <cairo-xlib.h>
 
 #include <X11/Xutil.h>
 #include <X11/keysym.h>
 #include <X11/Xatom.h>
+#endif /* LINUX */
 
 #include "./gx_CreamMachine.h"
 
@@ -55,17 +63,17 @@
 #define LDVAR(NAME) _section$__DATA__ ## NAME
 #define LDLEN(NAME) (getsectbyname("__DATA", "__" #NAME)->size)
 
-#elif (defined __WIN32__)  /* mingw */
-
-#define EXTLD(NAME) \
-  extern const unsigned char binary_ ## NAME ## _start[]; \
-  extern const unsigned char binary_ ## NAME ## _end[];
-#define LDVAR(NAME) \
-  binary_ ## NAME ## _start
-#define LDLEN(NAME) \
-  ((binary_ ## NAME ## _end) - (binary_ ## NAME ## _start))
-
-#else /* gnu/linux ld */
+//#elif (defined __WIN32__)  /* mingw */
+//
+//#define EXTLD(NAME) \
+//  extern const unsigned char binary_ ## NAME ## _start[]; \
+//  extern const unsigned char binary_ ## NAME ## _end[];
+//#define LDVAR(NAME) \
+//  binary_ ## NAME ## _start
+//#define LDLEN(NAME) \
+//  ((binary_ ## NAME ## _end) - (binary_ ## NAME ## _start))
+//
+#else /* gnu/linux ld */ // TM:and mingw/msys
 
 #define EXTLD(NAME) \
   extern const unsigned char _binary_ ## NAME ## _start[]; \
@@ -79,6 +87,12 @@
 // png's linked in as binarys
 EXTLD(pedal_png)
 EXTLD(pswitch_png)
+
+#ifdef _WIN32
+  #include "winutil.c"
+LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+LRESULT onPaint( HWND hwnd, WPARAM wParam, LPARAM lParam );
+#endif /* _WIN32 */
 
 /*---------------------------------------------------------------------
 -----------------------------------------------------------------------	
@@ -147,12 +161,22 @@ typedef struct {
 
 // main window struct
 typedef struct {
+#ifdef __linux__
 	Display *dpy;
 	Window win;
 	void *parentXwindow;
 	Visual *visual;
 	long event_mask;
 	Atom DrawController;
+#endif /* __linux__ */
+#ifdef _WIN32
+	//Display *dpy;
+	HWND win;
+	HWND parentXwindow; // TODO:rename
+	//Visual *visual;
+	//long event_mask;
+	//Atom DrawController;
+#endif /* _WIN32 */
 
 	int width;
 	int height;
@@ -207,6 +231,18 @@ cairo_surface_t *cairo_image_surface_create_from_stream (gx_CreamMachineUI* ui, 
 -----------------------------------------------------------------------
 ----------------------------------------------------------------------*/
 
+void SetClientSize(HWND hwnd, int clientWidth, int clientHeight) {
+    if (IsWindow(hwnd)) {
+        DWORD dwStyle = GetWindowLongPtr(hwnd, GWL_STYLE) ;
+        DWORD dwExStyle = GetWindowLongPtr(hwnd, GWL_EXSTYLE) ;
+        HMENU menu = GetMenu(hwnd) ;
+        RECT rc = {0, 0, clientWidth, clientHeight} ;
+        AdjustWindowRectEx(&rc, dwStyle, menu ? TRUE : FALSE, dwExStyle);
+        SetWindowPos(hwnd, NULL, 0, 0, rc.right - rc.left, rc.bottom - rc.top,
+                     SWP_NOZORDER | SWP_NOMOVE) ;
+    }
+}
+
 // init the xwindow and return the LV2UI handle
 static LV2UI_Handle instantiate(const LV2UI_Descriptor * descriptor,
 			const char * plugin_uri, const char * bundle_path,
@@ -215,6 +251,7 @@ static LV2UI_Handle instantiate(const LV2UI_Descriptor * descriptor,
 			const LV2_Feature * const * features) {
 
 	gx_CreamMachineUI* ui = (gx_CreamMachineUI*)malloc(sizeof(gx_CreamMachineUI));
+deb("instantiate1");
 
 	if (!ui) {
 		fprintf(stderr,"ERROR: failed to instantiate plugin with URI %s\n", plugin_uri);
@@ -238,6 +275,7 @@ static LV2UI_Handle instantiate(const LV2UI_Descriptor * descriptor,
 		return NULL;
 	}
 
+#ifdef __linux__
 	ui->dpy = XOpenDisplay(0);
 
 	if (ui->dpy == NULL)  {
@@ -245,6 +283,7 @@ static LV2UI_Handle instantiate(const LV2UI_Descriptor * descriptor,
 		free(ui);
 		return NULL;
 	}
+#endif /* __linux__ */
 
 	ui->controls[0] = (gx_controller) {{1.0, 1.0, 0.0, 1.0, 1.0}, {40, 60, 61, 61}, false,"POWER", BSWITCH, BYPASS};
 	ui->controls[1] = (gx_controller) {{0.5, 0.5, 0.0, 1.0, 0.01}, {310, 60, 61, 61}, false,"LEVEL", KNOB, LEVEL};
@@ -259,6 +298,7 @@ static LV2UI_Handle instantiate(const LV2UI_Descriptor * descriptor,
 	ui->height = ui->init_height = cairo_image_surface_get_height(ui->pedal);
 	ui->width = ui->init_width -140 + (70 * CONTROLS);
 
+#ifdef __linux__
 	ui->win = XCreateWindow(ui->dpy, (Window)ui->parentXwindow, 0, 0,
 								ui->width, ui->height, 0,
 								CopyFromParent, InputOutput,
@@ -275,6 +315,49 @@ static LV2UI_Handle instantiate(const LV2UI_Descriptor * descriptor,
 	ui->visual = DefaultVisual(ui->dpy, DefaultScreen (ui->dpy));
 	ui->surface = cairo_xlib_surface_create (ui->dpy, ui->win, ui->visual,
 										ui->width, ui->height);
+#endif /* __linux__ */
+#ifdef _WIN32
+deb("instantiate4b");
+    static TCHAR szClassName[] = TEXT("DrawSurfaceClass");
+    WNDCLASS     wndclass = {0};
+    HINSTANCE hInstance = NULL;
+    wndclass.style         = CS_HREDRAW | CS_VREDRAW; // clear on resize
+    //wndclass.style         = CS_OWNDC;
+    wndclass.lpfnWndProc   = WndProc;
+    wndclass.hInstance     = hInstance;
+    //wndclass.hIcon         = LoadIcon(NULL, IDI_APPLICATION);
+    wndclass.hCursor       = LoadCursor(NULL, IDC_ARROW);
+    wndclass.hbrBackground =(HBRUSH)COLOR_WINDOW;
+    wndclass.lpszClassName = szClassName;
+    if(!RegisterClass(&wndclass))
+	  deb("class already registered\n");
+	  ; // nada
+deb("instantiate5");
+    ui->win = CreateWindowEx(
+        WS_EX_TOPMOST, //exstyle
+        szClassName,
+        TEXT("Draw Surface"),
+        (WS_CHILD | WS_VISIBLE), //WS_OVERLAPPEDWINDOW,
+        CW_USEDEFAULT, CW_USEDEFAULT,
+        ui->width, ui->height, //CW_USEDEFAULT, CW_USEDEFAULT,
+        (HWND)ui->parentXwindow,
+		NULL, hInstance, NULL);
+deb("instantiate5-2");
+    // attach "ui" to this window (so it is available in WndProc)
+	SetWindowLongPtr(ui->win, GWLP_USERDATA, (LONG_PTR)ui); //XXX_UI
+    SetParent(ui->win, (HWND)ui->parentXwindow);
+    ShowWindow(ui->win, SW_SHOW);
+    //?//UpdateWindow(ui->win); // forces immediate redraw
+    SetClientSize(ui->win, ui->width, ui->height);
+
+    cairo_rectangle_t ext;
+    ext.x = 0;
+    ext.y = 0;
+    ext.width = ui->width;
+    ext.height = ui->height;
+    ui->surface = cairo_recording_surface_create(CAIRO_CONTENT_COLOR_ALPHA, &ext); // this one can be modified (win32_surface is write-once)
+deb("instantiate8");
+#endif /* _WIN32 */
 	ui->cr = cairo_create(ui->surface);
 
 	ui->frame = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 61, 81);
@@ -298,7 +381,9 @@ static LV2UI_Handle instantiate(const LV2UI_Descriptor * descriptor,
 	ui->rescale.x2 =  ui->rescale.xc / ui->rescale.c;
 	ui->rescale.y2 = ui->rescale.y / ui->rescale.c;
 
+#ifdef __linux__
 	ui->DrawController = XInternAtom(ui->dpy, "ControllerMessage", False);
+#endif /* __linux__ */
 
 	ui->controller = controller;
 	ui->write_function = write_function;
@@ -316,8 +401,13 @@ static void cleanup(LV2UI_Handle handle) {
 	cairo_surface_destroy(ui->pswitch);
 	cairo_surface_destroy(ui->surface);
 	cairo_surface_destroy(ui->frame);
+#ifdef __linux__
 	XDestroyWindow(ui->dpy, ui->win);
 	XCloseDisplay(ui->dpy);
+#endif /* __linux__ */
+#ifdef _WIN32
+	DestroyWindow(ui->win);
+#endif /* _WIN32 */
 	free(ui);
 }
 
@@ -608,12 +698,31 @@ static void controller_expose(gx_CreamMachineUI *ui, gx_controller * control) {
 
 // resize the xwindow and the cairo xlib surface
 static void resize_event(gx_CreamMachineUI *ui) {
+deb("resize_event:ui=%p",ui);
+#ifdef __linux__
 	XWindowAttributes attrs;
 	XGetWindowAttributes(ui->dpy, (Window)ui->parentXwindow, &attrs);
 	ui->width = attrs.width;
 	ui->height = attrs.height;
 	XResizeWindow (ui->dpy,ui->win ,ui->width, ui->height);
 	cairo_xlib_surface_set_size( ui->surface, ui->width, ui->height);
+#endif /* __linux__ */
+#ifdef _WIN32
+    RECT rect;
+    GetClientRect(ui->parentXwindow, &rect);
+    ui->width = rect.right - rect.left;
+    ui->height = rect.bottom - rect.top;
+    SetClientSize(ui->win, ui->width, ui->height);
+	cairo_surface_destroy(ui->surface);
+	cairo_destroy(ui->cr);
+    cairo_rectangle_t ext;
+    ext.x = 0;
+    ext.y = 0;
+    ext.width = ui->width;
+    ext.height = ui->height;
+    ui->surface = cairo_recording_surface_create(CAIRO_CONTENT_COLOR_ALPHA, &ext); // this one can be modified (win32_surface is write-once)
+	ui->cr = cairo_create(ui->surface);
+#endif /* _WIN32 */
 	ui->rescale.x  = (double)ui->width/ui->init_width;
 	ui->rescale.y  = (double)ui->height/ui->init_height;
 	ui->rescale.x1 = (double)ui->init_width/ui->width;
@@ -626,6 +735,7 @@ static void resize_event(gx_CreamMachineUI *ui) {
 
 // send event when active controller changed
 static void send_controller_event(gx_CreamMachineUI *ui, int controller) {
+#ifdef __linux__
 	XClientMessageEvent xevent;
 	xevent.type = ClientMessage;
 	xevent.message_type = ui->DrawController;
@@ -634,6 +744,13 @@ static void send_controller_event(gx_CreamMachineUI *ui, int controller) {
 	xevent.format = 16;
 	xevent.data.l[0] = controller;
 	XSendEvent(ui->dpy, ui->win, 0, 0, (XEvent *)&xevent);
+#endif /* __linux__ */
+#ifdef _WIN32
+deb("controller_expose#%d",controller);
+	controller_expose(ui, &ui->controls[controller]);
+	InvalidateRect(ui->win, NULL, TRUE);
+#endif /* _WIN32 */
+
 }
 
 /*------------- check and set state of controllers ---------------*/
@@ -847,6 +964,7 @@ static void get_last_active_controller(gx_CreamMachineUI *ui, bool set) {
 	}
 }
 
+#ifdef __linux__
 // map supported key's to integers or return zerro
 static int key_mapping(Display *dpy, XKeyEvent *xkey) {
 	if (xkey->keycode == XKeysymToKeycode(dpy,XK_Tab))
@@ -886,9 +1004,54 @@ static int key_mapping(Display *dpy, XKeyEvent *xkey) {
 		return 7;
 	else return 0;
 }
+#endif /* __linux__ */
+#ifdef _WIN32
+static int key_mapping(WPARAM keycode) {
+	if (keycode == VK_TAB)
+        return (GetKeyState(VK_SHIFT)) ? 1 : 2;
+		//return (state == ShiftMask) ? 1 : 2;
+	else if (keycode == VK_UP)
+		return 3;
+	else if (keycode == VK_RIGHT)
+		return 3;
+	else if (keycode == VK_DOWN)
+		return 4;
+	else if (keycode == VK_LEFT)
+		return 4;
+	else if (keycode == VK_HOME)
+		return 5;
+	else if (keycode == VK_INSERT)
+		return 6;
+	else if (keycode == VK_END)
+		return 7;
+	// keypad
+	else if (keycode == VK_SUBTRACT)
+		return 1;
+	else if (keycode == VK_ADD)
+		return 2;
+    /*
+	else if (keycode == VK_KP_UP)
+		return 3;
+	else if (keycode == VK_KP_RIGHT)
+		return 3;
+	else if (keycode == VK_KP_DOWN)
+		return 4;
+	else if (keycode == VK_KP_LEFT)
+		return 4;
+	else if (keycode == VK_KP_HOME)
+		return 5;
+	else if (keycode == VK_KP_INSERT)
+		return 6;
+	else if (keycode == VK_KP_END)
+		return 7;
+    */
+	else return 0;
+}
+#endif /* _WIN32 */
 
 /*------------- the event loop ---------------*/
 
+#ifdef __linux__
 // general xevent handler
 static void event_handler(gx_CreamMachineUI *ui) {
 	XEvent xev;
@@ -992,6 +1155,137 @@ static void event_handler(gx_CreamMachineUI *ui) {
 		}
 	}
 }
+#endif /* __linux__ */
+
+/*------------- MSWin event loop ---------------*/
+#ifdef _WIN32
+static void event_handler(gx_CreamMachineUI *ui) {
+//deb("event_handler");
+}
+
+LRESULT onPaint( HWND hwnd, WPARAM wParam, LPARAM lParam ) {
+    PAINTSTRUCT ps ;
+
+gx_CreamMachineUI *ui = (gx_CreamMachineUI *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+deb("onpaint:ui=%8.8x",ui);
+_expose(ui);
+InvalidateRect(hwnd, NULL, TRUE); // force update?
+    HDC hdc = BeginPaint(hwnd, &ps );
+deb("onpaint:hdc=%8.8x",hdc);
+
+    // Create the cairo surface and context.
+    cairo_surface_t *surface = cairo_win32_surface_create (hdc);
+    cairo_t *cr = cairo_create (surface);
+cairo_set_source_surface(cr, ui->surface, 0.0, 0.0);
+cairo_paint(cr);
+
+//_expose(ui);
+/*
+    // Draw on the cairo context.
+    cairo_select_font_face (cr, "serif", CAIRO_FONT_SLANT_NORMAL,
+                                         CAIRO_FONT_WEIGHT_BOLD);
+    cairo_set_font_size (cr, 32.0);
+    cairo_set_source_rgb (cr, 0.0, 0.0, 1.0);
+    cairo_move_to (cr, 10.0, 50.0);
+    cairo_show_text (cr, "Hello, World");
+*/
+//cairo_surface_flush(ui->surface);
+    // Cleanup.
+    cairo_destroy (cr);
+    cairo_surface_destroy (surface);
+
+    EndPaint( hwnd, &ps );
+    return 0 ;
+}
+
+LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	static double start_value = 0.0;
+	static bool blocked = false;
+gx_CreamMachineUI *ui = (gx_CreamMachineUI *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+
+    debug_wm(hwnd, msg, wParam, lParam);
+    switch (msg) {
+        case WM_CLOSE:
+            DestroyWindow(hwnd);
+            return 0;
+        case WM_DESTROY:
+            PostQuitMessage(0);
+            return 0;
+
+        // ConfigureNotify
+        case WM_SIZE:
+            if (ui)
+                resize_event(ui); // configure event, we only check for resize events here
+            return 0;
+        // Expose
+        case WM_PAINT:
+            return onPaint(hwnd, wParam, lParam); // not possible on mswin: (only fetch the last expose event)
+
+        // ButtonPress
+        case WM_LBUTTONDOWN:
+            ui->pos_x = GET_X_LPARAM(lParam);
+            ui->pos_y = GET_Y_LPARAM(lParam);
+            blocked = true;
+            button1_event(ui, &start_value); // left mouse button click
+            return 0;
+        // ButtonRelease
+        case WM_LBUTTONUP:
+            blocked = false;
+            return 0;
+        case WM_MOUSEWHEEL:
+            if (wParam >> 24)
+                scroll_event(ui, -1); // mouse wheel scroll down
+            else
+                scroll_event(ui, 1); // mouse wheel scroll up
+
+        // KeyPress
+        case WM_KEYUP:
+            switch (key_mapping(wParam)) {
+                case 1: set_previous_controller_active(ui);
+                break;
+                case 2: set_next_controller_active(ui);
+                break;
+                case 3: key_event(ui, 1);
+                break;
+                case 4: key_event(ui, -1);
+                break;
+                case 5: set_key_value(ui, 1);
+                break;
+                case 6: set_key_value(ui, 2);
+                break;
+                case 7: set_key_value(ui, 3);
+                break;
+                default:
+                break;
+            }
+            return 0;
+
+        // EnterNotify + LeaveNotify: There is no LeaveNotify-like message...
+        //     EnterNotify: if (!blocked) get_last_active_controller(ui, true);
+        //     LeaveNotify: if (!blocked) get_last_active_controller(ui, false);
+
+        // MotionNotify
+        case WM_MOUSEMOVE:
+				if (!blocked) { //get_last_active_controller(ui, true);
+                    int dummy;
+                    ui->pos_x = GET_X_LPARAM(lParam);
+                    ui->pos_y = GET_Y_LPARAM(lParam);
+                    get_active_ctl_num(ui, &dummy);
+                }
+            // mouse move while button1 is pressed
+            if (wParam & MK_LBUTTON) {
+                motion_event(ui, start_value, GET_Y_LPARAM(lParam));
+            }
+            return 0;
+
+        // ClientMessage: not required
+        default:
+            return DefWindowProc(hwnd, msg, wParam, lParam);
+    }
+}
+
+#endif /* _WIN32 */
 
 /*---------------------------------------------------------------------
 -----------------------------------------------------------------------	
