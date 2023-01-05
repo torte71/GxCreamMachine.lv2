@@ -43,6 +43,7 @@
 		ABI_LDFLAGS = -Wl,-z,noexecstack
 		GUI_LIBS = -L/usr/X11/lib -lX11
 		LIB_EXT = so
+		#GUI_PLATFORM_FILES = gx_Platform_linux.c
 	endif
 	ifeq ($(OS), Windows_NT) #WINDOWS
 		ECHO += -e
@@ -51,9 +52,11 @@
 		PKGCONFIG_FLAGS = --static
 		LIB_EXT = so
 		#LIB_EXT = dll # TODO:adjust .ttl files
+		#GUI_PLATFORM_FILES = gx_Platform_mswin.c
 	endif
 	ifeq ($(UNAME_S), Darwin) #APPLE
 		# insert magic here
+		#GUI_PLATFORM_FILES = gx_Platform_darwin.c
 	endif
 	# set compile flags
 	CXXFLAGS += -D_FORTIFY_SOURCE=2 -I. -I./dsp -I./plugin -I./dsp/zita-resampler-1.1.0 -I./dsp/zita-resampler-1.1.0/zita-resampler \
