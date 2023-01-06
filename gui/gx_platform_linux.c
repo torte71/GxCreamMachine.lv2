@@ -20,7 +20,7 @@
 ----------------------------------------------------------------------*/
 
 bool gx_gui_open_display(gx_CreamMachineUI *ui) {
-	ui->dpy = Xgx_gui_open_display(0);
+	ui->dpy = XOpenDisplay(0);
 	return (ui->dpy != NULL);
 }
 
