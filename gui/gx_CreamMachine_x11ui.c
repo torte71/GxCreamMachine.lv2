@@ -427,6 +427,7 @@ void controller_expose(gx_CreamMachineUI *ui, gx_controller * control) {
 
 // resize the xwindow and the cairo xlib surface
 void resize_event(gx_CreamMachineUI *ui) {
+	ResizeSurface(ui);
 	ui->rescale.x  = (double)ui->width/ui->init_width;
 	ui->rescale.y  = (double)ui->height/ui->init_height;
 	ui->rescale.x1 = (double)ui->init_width/ui->width;
