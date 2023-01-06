@@ -1,13 +1,17 @@
 // vim:ts=4:sw=4:et:fdm=marker:
+#ifndef __WINUTIL_C__
+#define __WINUTIL_C__
 
-#define deb(args...) { char xxxtmsg[1024]; snprintf(xxxtmsg, 1023, args); OutputDebugString(xxxtmsg); }
+#include <stdio.h>
+
+//#define deb(args...) { char xxxtmsg[1024]; snprintf(xxxtmsg, 1023, args); OutputDebugString(xxxtmsg); }
 
 int debug_verbosity = 2;
 void debug_wm(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     char *msgstr;
     if (debug_verbosity < 2)
         return;
-    if ( (debug_verbosity < 3) && ( (msg == 0x200) || (msg == 0x20) || (msg == 0xA0) || (msg == 0x84) ) )
+    if ( (debug_verbosity < 3) && ( (msg == 0x0200) || (msg == 0x0020) || (msg == 0x00A0) || (msg == 0x0084) ) )
         return;
     switch (msg) {
         /* WM_ names {{{1 */
@@ -1063,3 +1067,4 @@ void debug_wm(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     deb("hwnd=%8.8x msg=%8.8x w=%8.8x l=%8.8x %s\n", hwnd, msg, wParam, lParam, msgstr);
 }
 
+#endif /* __WINUTIL_C__ */
