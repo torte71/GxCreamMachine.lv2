@@ -68,7 +68,7 @@
 		       -Wno-format -Wno-comment
 	# invoke build files
 	OBJECTS = plugin/$(NAME).cpp 
-	GUI_OBJECTS = gui/$(NAME)_x11ui.c $(GUI_PLATFORM_FILES)
+	GUI_OBJECTS = gui/$(NAME)_gui.c $(GUI_PLATFORM_FILES)
 	RES_OBJECTS = gui/pedal.o gui/pswitch.o
 	## output style (bash colours)
 	LGREEN = "\033[1;92m"
