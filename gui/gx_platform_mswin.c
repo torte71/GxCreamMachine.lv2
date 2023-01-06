@@ -165,7 +165,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 	// be aware: "ui" can be NULL during window creation (esp. if there is a debugger attached)
 	gx_CreamMachineUI *ui = (gx_CreamMachineUI *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
-	debug_wm(hwnd, msg, wParam, lParam);
 
 	switch (msg) {
 		// MSWin only: React to close requests

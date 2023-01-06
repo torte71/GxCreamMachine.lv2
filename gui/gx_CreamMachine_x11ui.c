@@ -14,15 +14,15 @@
 #include "./gx_CreamMachine.h"
 #include "gui/gx_gui.h"
 
-#ifdef _WIN32
-#include "winutil.c"
-#endif /* _WIN32 */
-
 /*---------------------------------------------------------------------
 -----------------------------------------------------------------------	
 		load png data from binary blob into cairo surface
 -----------------------------------------------------------------------
 ----------------------------------------------------------------------*/
+
+// png's linked in as binarys
+EXTLD(pedal_png)
+EXTLD(pswitch_png)
 
 // read png data from binary blob
 cairo_status_t png_stream_reader (void *_stream, unsigned char *data, unsigned int length) {

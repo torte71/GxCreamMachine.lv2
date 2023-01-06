@@ -1,3 +1,4 @@
+// vim:ts=4:sw=4:noet:
 #ifndef __GX_PLATFORM_H__
 #define __GX_PLATFORM_H__ 1
 
@@ -65,24 +66,5 @@
 #define LDVAR(NAME) _section$__DATA__ ## NAME
 #define LDLEN(NAME) (getsectbyname("__DATA", "__" #NAME)->size)
 #endif /*__APPLE__ */
-
-// png's linked in as binarys
-EXTLD(pedal_png)
-EXTLD(pswitch_png)
-
-/*---------------------------------------------------------------------
------------------------------------------------------------------------	
-			forward declaration of compatibility functions
------------------------------------------------------------------------
-----------------------------------------------------------------------*/
-
-
-
-// private declarations
-#ifdef _WIN32
-#define deb(args...) { char xxxtmsg[1024]; snprintf(xxxtmsg, 1023, args); OutputDebugString(xxxtmsg); }
-void debug_wm(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
-#endif /* _WIN32 */
-
 
 #endif /* __GX_PLATFORM_H__ */
