@@ -75,7 +75,7 @@ static LV2UI_Handle instantiate(const LV2UI_Descriptor * descriptor,
 		return NULL;
 	}
 
-	if (!OpenDisplay(ui)) { // sets ui->dpy (only used by Linux)
+	if (!gx_gui_open_display(ui)) { // sets ui->dpy (only used by Linux)
 		fprintf(stderr, "ERROR: Failed to open display for %s\n", plugin_uri);
 		free(ui);
 		return NULL;
@@ -94,7 +94,7 @@ static LV2UI_Handle instantiate(const LV2UI_Descriptor * descriptor,
 	ui->height = ui->init_height = cairo_image_surface_get_height(ui->pedal);
 	ui->width = ui->init_width -140 + (70 * CONTROLS);
 
-	CreateWindowAndSurface(ui); // sets ui->win and ui->surface
+	gx_gui_create_window_and_surface(ui); // sets ui->win and ui->surface
 	ui->cr = cairo_create(ui->surface);
 
 	ui->frame = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 61, 81);
@@ -118,7 +118,7 @@ static LV2UI_Handle instantiate(const LV2UI_Descriptor * descriptor,
 	ui->rescale.x2 =  ui->rescale.xc / ui->rescale.c;
 	ui->rescale.y2 = ui->rescale.y / ui->rescale.c;
 
-	RegisterControllerMessage(ui); // message for redrawing a controller (only used by Linux)
+	gx_gui_register_controller_message(ui); // message for redrawing a controller (only used by Linux)
 
 	ui->controller = controller;
 	ui->write_function = write_function;
@@ -136,7 +136,7 @@ static void cleanup(LV2UI_Handle handle) {
 	cairo_surface_destroy(ui->pswitch);
 	cairo_surface_destroy(ui->surface);
 	cairo_surface_destroy(ui->frame);
-	DestroyMainWindow(ui);
+	gx_gui_destroy_main_window(ui);
 	free(ui);
 }
 
@@ -427,7 +427,7 @@ void controller_expose(gx_CreamMachineUI *ui, gx_controller * control) {
 
 // resize the xwindow and the cairo xlib surface
 void resize_event(gx_CreamMachineUI *ui) {
-	ResizeSurface(ui);
+	gx_gui_resize_surface(ui);
 	ui->rescale.x  = (double)ui->width/ui->init_width;
 	ui->rescale.y  = (double)ui->height/ui->init_height;
 	ui->rescale.x1 = (double)ui->init_width/ui->width;
@@ -440,7 +440,7 @@ void resize_event(gx_CreamMachineUI *ui) {
 
 // send event when active controller changed
 static void send_controller_event(gx_CreamMachineUI *ui, int controller) {
-	SendControllerEvent(ui, controller);
+	gx_gui_send_controller_event(ui, controller);
 }
 
 /*------------- check and set state of controllers ---------------*/

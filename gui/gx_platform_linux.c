@@ -19,12 +19,12 @@
 -----------------------------------------------------------------------
 ----------------------------------------------------------------------*/
 
-bool OpenDisplay(gx_CreamMachineUI *ui) {
-	ui->dpy = XOpenDisplay(0);
+bool gx_gui_open_display(gx_CreamMachineUI *ui) {
+	ui->dpy = Xgx_gui_open_display(0);
 	return (ui->dpy != NULL);
 }
 
-void CreateWindowAndSurface(gx_CreamMachineUI *ui) {
+void gx_gui_create_window_and_surface(gx_CreamMachineUI *ui) {
 	ui->win = XCreateWindow(ui->dpy, (Window)ui->parentWindow, 0, 0,
 								ui->width, ui->height, 0,
 								CopyFromParent, InputOutput,
@@ -43,16 +43,16 @@ void CreateWindowAndSurface(gx_CreamMachineUI *ui) {
 										ui->width, ui->height);
 }
 
-void RegisterControllerMessage(gx_CreamMachineUI *ui) {
+void gx_gui_register_controller_message(gx_CreamMachineUI *ui) {
 	ui->DrawController = XInternAtom(ui->dpy, "ControllerMessage", False);
 }
 
-void DestroyMainWindow(gx_CreamMachineUI *ui) {
+void gx_gui_destroy_main_window(gx_CreamMachineUI *ui) {
 	XDestroyWindow(ui->dpy, ui->win);
 	XCloseDisplay(ui->dpy);
 }
 
-void ResizeSurface(gx_CreamMachineUI *ui) {
+void gx_gui_resize_surface(gx_CreamMachineUI *ui) {
 	XWindowAttributes attrs;
 	XGetWindowAttributes(ui->dpy, (Window)ui->parentWindow, &attrs);
 	ui->width = attrs.width;
@@ -61,7 +61,7 @@ void ResizeSurface(gx_CreamMachineUI *ui) {
 	cairo_xlib_surface_set_size( ui->surface, ui->width, ui->height);
 }
 
-void SendControllerEvent(gx_CreamMachineUI *ui, int controller) {
+void gx_gui_send_controller_event(gx_CreamMachineUI *ui, int controller) {
 	XClientMessageEvent xevent;
 	xevent.type = ClientMessage;
 	xevent.message_type = ui->DrawController;

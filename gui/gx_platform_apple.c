@@ -18,27 +18,27 @@
 
 // example: https://cairo.cairographics.narkive.com/I86TGEQq/osx-os-x-example#post7
 
-bool OpenDisplay(gx_CreamMachineUI *ui) {
+bool gx_gui_open_display(gx_CreamMachineUI *ui) {
 	return true; // STUB
 }
 
-void CreateWindowAndSurface(gx_CreamMachineUI *ui) {
+void gx_gui_create_window_and_surface(gx_CreamMachineUI *ui) {
 	// STUB
 }
 
-void RegisterControllerMessage(gx_CreamMachineUI *ui) {
+void gx_gui_register_controller_message(gx_CreamMachineUI *ui) {
 	// STUB
 }
 
-void DestroyMainWindow(gx_CreamMachineUI *ui) {
+void gx_gui_destroy_main_window(gx_CreamMachineUI *ui) {
 	// STUB
 }
 
-void ResizeSurface(gx_CreamMachineUI *ui) {
+void gx_gui_resize_surface(gx_CreamMachineUI *ui) {
 	// STUB
 }
 
-void SendControllerEvent(gx_CreamMachineUI *ui, int controller) {
+void gx_gui_send_controller_event(gx_CreamMachineUI *ui, int controller) {
 	// STUB
 }
 

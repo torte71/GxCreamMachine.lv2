@@ -25,11 +25,11 @@ LRESULT onPaint( HWND hwnd, WPARAM wParam, LPARAM lParam );
 -----------------------------------------------------------------------
 ----------------------------------------------------------------------*/
 
-bool OpenDisplay(gx_CreamMachineUI *ui) {
+bool gx_gui_open_display(gx_CreamMachineUI *ui) {
 	return true; // STUB
 }
 
-void CreateWindowAndSurface(gx_CreamMachineUI *ui) {
+void gx_gui_create_window_and_surface(gx_CreamMachineUI *ui) {
 	// prepare window class
 	static TCHAR szClassName[] = TEXT("gx_DrawSurfaceClass");
 	WNDCLASS wndclass = {0};
@@ -63,17 +63,17 @@ void CreateWindowAndSurface(gx_CreamMachineUI *ui) {
 	ui->surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, ui->width, ui->height); 
 }
 
-void RegisterControllerMessage(gx_CreamMachineUI *ui) {
+void gx_gui_register_controller_message(gx_CreamMachineUI *ui) {
 	// dummy, not required on MSWin
 }
 
-void DestroyMainWindow(gx_CreamMachineUI *ui) {
+void gx_gui_destroy_main_window(gx_CreamMachineUI *ui) {
 	DestroyWindow(ui->win);
 	// safe to use: doesnt unregister if there are still windows of this class
 	UnregisterClass(TEXT("gx_DrawSurfaceClass"), NULL);
 }
 
-void ResizeSurface(gx_CreamMachineUI *ui) {
+void gx_gui_resize_surface(gx_CreamMachineUI *ui) {
 	RECT rect;
 
 	GetClientRect(ui->parentWindow, &rect);
@@ -87,7 +87,7 @@ void ResizeSurface(gx_CreamMachineUI *ui) {
 	ui->cr = cairo_create(ui->surface);
 }
 
-void SendControllerEvent(gx_CreamMachineUI *ui, int controller) {
+void gx_gui_send_controller_event(gx_CreamMachineUI *ui, int controller) {
 	// On X11 this sends a Window-Message (which is received by polling
 	// the eventloop inside the plugins (idle) event_handler).
 	// This could be simulated using a registered Window-Message (in conjunction
