@@ -51,9 +51,10 @@
 		ABI_LDFLAGS = -static
 		GUI_LIBS = -liconv -lstdc++
 		PKGCONFIG_FLAGS = --static
-		LIB_EXT = so
-		#LIB_EXT = dll # TODO:adjust .ttl files
+		LIB_EXT = dll
 		GUI_PLATFORM_FILES = $(GUI_PLATFORM_DIR)/gx_platform_mswin.c
+		TTLUPDATE = sed -i '/lv2:binary/ s/\.so/\.dll/ ' $(BUNDLE)/manifest.ttl
+		TTLUPDATEGUI = sed -i '/a guiext:X11UI/ s/X11UI/WindowsUI/ ; /guiext:binary/ s/\.so/\.dll/ ' $(BUNDLE)/gx_CreamMachine.ttl
 	endif
 	ifeq ($(UNAME_S), Darwin) #APPLE
 		# insert magic here
@@ -82,6 +83,8 @@ all : check $(NAME)
 	@mkdir -p ./$(BUNDLE)
 	@cp ./plugin/*.ttl ./$(BUNDLE)
 	@mv ./*.$(LIB_EXT) ./$(BUNDLE)
+	$(TTLUPDATE)
+	$(TTLUPDATEGUI)
 	@if [ -f ./$(BUNDLE)/$(NAME).$(LIB_EXT) ]; then $(ECHO) $(BLUE)"build finish, now run make install"; \
 	else $(ECHO) $(RED)"sorry, build failed"; fi
 	@$(ECHO) $(NONE)
@@ -90,9 +93,12 @@ mod : check clean nogui
 	@mkdir -p ./$(BUNDLE)
 	@cp -R ./MOD/* ./$(BUNDLE)
 	@mv ./*.$(LIB_EXT) ./$(BUNDLE)
+	$(TTLUPDATE)
 	@if [ -f ./$(BUNDLE)/$(NAME).$(LIB_EXT) ]; then $(ECHO) $(BLUE)"build finish, now run make install"; \
 	else $(ECHO) $(RED)"sorry, build failed"; fi
 	@$(ECHO) $(NONE)
+
+ttl :
 
 check :
 ifdef ARMCPU
