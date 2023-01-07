@@ -162,6 +162,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	static double start_value = 0.0;
 	static bool blocked = false;
+	POINT pt;
 
 	// be aware: "ui" can be NULL during window creation (esp. if there is a debugger attached)
 	gx_CreamMachineUI *ui = (gx_CreamMachineUI *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
@@ -203,6 +204,11 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			return 0;
 		case WM_MOUSEWHEEL:
 			if (!ui) return DefWindowProc(hwnd, msg, wParam, lParam);
+			// opposed to X11, WM_MOUSEWHEEL doesnt contain mouse coordinates
+			if (GetCursorPos(&pt) && ScreenToClient(hwnd, &pt)) {
+				ui->pos_x = pt.x;
+				ui->pos_y = pt.y;
+			}
 			if (GET_WHEEL_DELTA_WPARAM(wParam) <= 0)
 				scroll_event(ui, -1); // mouse wheel scroll down
 			else
@@ -251,12 +257,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				ui->mouse_inside = true;
 				if (!blocked) get_last_active_controller(ui, true);
 				SetMouseTracking(ui->win, true); // for receiving (next) WM_MOUSELEAVE
-			}
-			if (!blocked) {
-				int dummy;
-				ui->pos_x = GET_X_LPARAM(lParam);
-				ui->pos_y = GET_Y_LPARAM(lParam);
-				get_active_ctl_num(ui, &dummy);
 			}
 			// mouse move while button1 is pressed
 			if (wParam & MK_LBUTTON) {
