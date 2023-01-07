@@ -65,8 +65,7 @@
 	 -fPIC -DPIC -O2 -Wall -fstack-protector -funroll-loops -ffast-math -fomit-frame-pointer -fstrength-reduce \
 	 -fdata-sections -Wl,--gc-sections $(ABI_CXXFLAGS) $(SSE_CFLAGS)
 	LDFLAGS += -I. -shared -lm $(ABI_LDFLAGS)
-	GUI_LDFLAGS += -I./gui -shared $(ABI_LDFLAGS) -lm `pkg-config $(PKGCONFIG_FLAGS) --cflags --libs cairo` $(GUI_LIBS) \
-		       -Wno-format -Wno-comment
+	GUI_LDFLAGS += -I./gui -shared $(ABI_LDFLAGS) -lm `pkg-config $(PKGCONFIG_FLAGS) --cflags --libs cairo` $(GUI_LIBS)
 	# invoke build files
 	OBJECTS = plugin/$(NAME).cpp 
 	GUI_OBJECTS = gui/$(NAME)_gui.c $(GUI_PLATFORM_FILES)
