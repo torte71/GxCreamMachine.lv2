@@ -41,6 +41,7 @@ void gx_gui_create_window_and_surface(gx_CreamMachineUI *ui) {
 	wndclass.hCursor	   = LoadCursor(NULL, IDC_ARROW);
 	wndclass.hbrBackground =(HBRUSH)COLOR_WINDOW;
 	wndclass.lpszClassName = szClassName;
+	wndclass.cbWndExtra    = sizeof(ui); // reserve space for SetWindowLongPtr
 	RegisterClass(&wndclass);
 	// create the window
 	ui->win = CreateWindowEx(WS_EX_TOPMOST, // dwExStyle
