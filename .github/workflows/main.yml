@@ -1,0 +1,29 @@
+name: Build on Windows
+on: push
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+    - uses: msys2/setup-msys2@v2
+      with:
+        update: true
+        install: >-
+          base-devel
+          git
+          make
+          mingw-w64-x86_64-gcc
+          mingw-w64-x86_64-lv2
+          mingw-w64-x86_64-cairo
+          mingw-w64-x86_64-pkgconf
+          pkgconf
+    - name: find
+      run: find
+    - name: find /d/a
+      run: find /d/a
+    #- run: git config --global core.autocrlf input
+    #  shell: bash
+    #- uses: actions/checkout@v3
+    #- run: git describe --dirty
