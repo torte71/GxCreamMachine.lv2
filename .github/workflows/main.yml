@@ -21,8 +21,8 @@ jobs:
           pkgconf
           mingw-w64-x86_64-7zip
     - uses: actions/checkout@v1
-    - name: make && make DESTDIR=$(pwd)/_bin intall
-      run: make
+    - name: make
+      run: make && make DESTDIR=$(pwd)/_bin install
     - name: zip
       run: mv _bin~/.lv2 _bin~/lv2 ; cd _bin~ ; 7z a ../plugin.7z lv2 ; cd ..
     - name: upload
