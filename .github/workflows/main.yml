@@ -19,10 +19,11 @@ jobs:
           mingw-w64-x86_64-cairo
           mingw-w64-x86_64-pkgconf
           pkgconf
+    - uses: actions/checkout@v1
     - name: find
       run: find
-    - name: find /d/a
-      run: find /d/a
+    - name: make
+      run: make
     #- run: git config --global core.autocrlf input
     #  shell: bash
     #- uses: actions/checkout@v3
